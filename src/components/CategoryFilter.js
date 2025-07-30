@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import './TimelineComponent.css';
 
 const CategoryFilter = ({ categories, activeCategories, onToggleCategory }) => {
@@ -25,16 +24,6 @@ const CategoryFilter = ({ categories, activeCategories, onToggleCategory }) => {
   );
 };
 
-CategoryFilter.propTypes = {
-  categories: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      color: PropTypes.string.isRequired
-    })
-  ).isRequired,
-  activeCategories: PropTypes.arrayOf(PropTypes.string).isRequired,
-  onToggleCategory: PropTypes.func.isRequired
-};
+
 
 export default CategoryFilter; 

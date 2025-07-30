@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import PropTypes from 'prop-types';
 import timelineData from './TimelineData';
 import './TimelineComponent.css';
 
@@ -47,8 +46,6 @@ const EventDetailsPanel = ({ selectedEventId }) => {
   );
 };
 
-EventDetailsPanel.propTypes = {
-  selectedEventId: PropTypes.number
-};
+
 
 export default EventDetailsPanel; 
