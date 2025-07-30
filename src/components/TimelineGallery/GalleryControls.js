@@ -18,7 +18,7 @@ const GalleryControls = ({ setCurrentIndex, currentIndex, maxIndex, zoom, setZoo
     setZoom(prev => Math.max(0.1, Math.min(10, prev * zoomFactor)));
   }, [setZoom]);
   
-  // Handle drag operation for moving through frames
+  // Handle drag operation for moving through frames (mouse)
   const handleMouseDown = useCallback((e) => {
     setIsDragging(true);
     startXRef.current = e.clientX;
@@ -46,6 +46,36 @@ const GalleryControls = ({ setCurrentIndex, currentIndex, maxIndex, zoom, setZoo
     setCurrentIndex(Math.round(currentIndex));
   }, [currentIndex, gl.domElement.style, setCurrentIndex]);
   
+  // Handle touch events for mobile
+  const handleTouchStart = useCallback((e) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      startXRef.current = e.touches[0].clientX;
+      startIndexRef.current = currentIndex;
+    }
+  }, [currentIndex]);
+  
+  const handleTouchMove = useCallback((e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    
+    e.preventDefault(); // Prevent scrolling
+    
+    // Calculate movement
+    const deltaX = e.touches[0].clientX - startXRef.current;
+    const indexDelta = -deltaX / 80; // Slightly faster for touch
+    
+    // Update current index
+    const newIndex = Math.max(0, Math.min(maxIndex, startIndexRef.current + indexDelta));
+    setCurrentIndex(newIndex);
+  }, [isDragging, maxIndex, setCurrentIndex]);
+  
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+    
+    // Snap to nearest integer index
+    setCurrentIndex(Math.round(currentIndex));
+  }, [currentIndex, setCurrentIndex]);
+  
   // Set up event listeners
   useEffect(() => {
     const canvas = gl.domElement;
@@ -55,6 +85,11 @@ const GalleryControls = ({ setCurrentIndex, currentIndex, maxIndex, zoom, setZoo
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     
+    // Touch events for mobile
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
+    
     // Initial style
     canvas.style.cursor = 'grab';
     
@@ -63,8 +98,11 @@ const GalleryControls = ({ setCurrentIndex, currentIndex, maxIndex, zoom, setZoo
       canvas.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [gl, handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
+  }, [gl, handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, handleTouchStart, handleTouchMove, handleTouchEnd]);
   
   // Position camera to look at current frame
   useFrame(() => {

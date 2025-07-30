@@ -26,7 +26,7 @@ export const useGalleryState = (activeCategories = []) => {
   
   const [currentIndex, setCurrentIndex] = useState(initialIndex >= 0 ? initialIndex : 0);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [zoom, setZoom] = useState(1.0); // Start with default zoom
+  const [zoom, setZoom] = useState(4.3); // Start with much more zoomed out view
   
   console.log('Current state - currentIndex:', currentIndex, 'initialIndex:', initialIndex);
   
