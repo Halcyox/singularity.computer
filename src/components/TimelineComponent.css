@@ -3,7 +3,7 @@
   height: 100vh;
   position: relative;
   overflow: hidden;
-  font-family: 'Inter', 'Roboto', Arial, sans-serif;
+  font-family: 'Roboto', Arial, sans-serif;
   background: linear-gradient(to bottom, #0a0a2e, #16213e, #0f3460);
 }
 
@@ -251,7 +251,7 @@
 
 /* Year Labels styling */
 .year-label {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Roboto', Arial, sans-serif;
   font-weight: 600;
   opacity: 0.8;
   text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
