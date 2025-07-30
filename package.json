@@ -44,6 +44,7 @@
     "@testing-library/react": "^16.2.0",
     "@vitejs/plugin-react": "^4.2.1",
     "jsdom": "^26.0.0",
+    "terser": "^5.43.1",
     "vite": "^5.1.4",
     "vitest": "^3.0.8"
   }
