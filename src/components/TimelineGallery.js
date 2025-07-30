@@ -5,11 +5,6 @@ import {
   Environment, 
   Text
 } from '@react-three/drei';
-import { 
-  EffectComposer, 
-  DepthOfField, 
-  Bloom 
-} from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { useSpring, animated } from '@react-spring/three';
 import timelineData from './TimelineData';
@@ -39,24 +34,12 @@ const GalleryEnvironment = () => {
       
       {/* Environment map for reflections */}
       <Environment preset="city" />
-      
-      {/* Gallery floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
-        <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#1a1a2e" roughness={0.8} metalness={0.2} />
-      </mesh>
-      
-      {/* Backdrop "wall" */}
-      <mesh position={[0, 0, -6]} receiveShadow>
-        <planeGeometry args={[100, 20]} />
-        <meshStandardMaterial color="#141428" roughness={0.95} metalness={0.05} />
-      </mesh>
     </>
   );
 };
 
 // Controls for navigating the gallery
-const GalleryControls = ({ setCurrentIndex, currentIndex, maxIndex }) => {
+const GalleryControls = ({ setCurrentIndex, currentIndex, maxIndex, zoom, setZoom }) => {
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef(0);
   const startIndexRef = useRef(0);
@@ -65,9 +48,9 @@ const GalleryControls = ({ setCurrentIndex, currentIndex, maxIndex }) => {
   // Handle wheel event for zooming through frames
   const handleWheel = useCallback((e) => {
     // Determine direction
-    const direction = e.deltaY > 0 ? 1 : -1;
-    setCurrentIndex(prev => Math.max(0, Math.min(maxIndex, prev + direction)));
-  }, [setCurrentIndex, maxIndex]);
+    const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+    setZoom(prev => Math.max(0.1, Math.min(10, prev * zoomFactor)));
+  }, [setZoom]);
   
   // Handle drag operation for moving through frames
   const handleMouseDown = useCallback((e) => {
@@ -122,7 +105,11 @@ const GalleryControls = ({ setCurrentIndex, currentIndex, maxIndex }) => {
     // Smoothly animate camera target to current index position
     const targetX = currentIndex * 4; // 4 units between frames
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.05);
-    
+
+    // Smoothly adjust camera zoom - bring it closer for better scaling visibility
+    const baseDistance = 4; // Closer for better scaling visibility
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, baseDistance * zoom, 0.05);
+
     // Always look straight ahead
     camera.lookAt(new THREE.Vector3(camera.position.x, 0, 0));
   });
@@ -130,53 +117,24 @@ const GalleryControls = ({ setCurrentIndex, currentIndex, maxIndex }) => {
   return null;
 };
 
-// The camera with depth of field effects
-const GalleryCamera = ({ currentIndex, dof }) => {
+// The camera without depth of field effects
+const GalleryCamera = ({ currentIndex, zoom }) => {
   const cameraRef = useRef();
-  const { size } = useThree();
-  
-  // Calculate focus distance based on current index
-  const focusDistance = useMemo(() => {
-    // Focus on the z-position where frames are located
-    return 5;
-  }, []);
   
   return (
-    <>
-      <PerspectiveCamera
-        ref={cameraRef}
-        makeDefault
-        position={[0, 0, 5]} 
-        fov={45}
-        near={0.1}
-        far={100}
-      />
-      
-      {dof && (
-        <EffectComposer>
-          <DepthOfField
-            focusDistance={focusDistance}
-            focalLength={0.02}
-            bokehScale={2}
-            height={size.height}
-          />
-          <Bloom 
-            intensity={0.1} 
-            luminanceThreshold={0.9} 
-            luminanceSmoothing={0.025} 
-          />
-        </EffectComposer>
-      )}
-    </>
+    <PerspectiveCamera
+      ref={cameraRef}
+      makeDefault
+      position={[0, 0, 5]} 
+      fov={45}
+      near={0.1}
+      far={100}
+    />
   );
 };
 
 // The main gallery component
 const TimelineGallery = ({ activeCategories = [] }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [depthOfFieldEnabled, setDepthOfFieldEnabled] = useState(true);
-  
   // Filter events by active categories
   const filteredEvents = useMemo(() => {
     return timelineData.events.filter(event => 
@@ -187,6 +145,20 @@ const TimelineGallery = ({ activeCategories = [] }) => {
       return a.month - b.month;
     });
   }, [activeCategories]);
+  
+  // Calculate initial currentIndex from the FILTERED events array
+  const initialIndex = useMemo(() => {
+    const index = filteredEvents.findIndex(e => e.year === 2024);
+    console.log('Filtered events:', filteredEvents.map(e => `${e.year}-${e.month}: ${e.title}`));
+    console.log('Initial index for 2024:', index);
+    return index;
+  }, [filteredEvents]);
+  
+  const [currentIndex, setCurrentIndex] = useState(initialIndex >= 0 ? initialIndex : 0);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [zoom, setZoom] = useState(1.0); // Start with default zoom
+  
+  console.log('Current state - currentIndex:', currentIndex, 'initialIndex:', initialIndex);
   
   // Handle frame selection
   const handleSelectFrame = useCallback((eventId) => {
@@ -210,26 +182,32 @@ const TimelineGallery = ({ activeCategories = [] }) => {
   return (
     <div className="timeline-container">
       <Canvas shadows>
-        <GalleryCamera currentIndex={currentIndex} dof={depthOfFieldEnabled} />
+        <GalleryCamera currentIndex={currentIndex} zoom={zoom} />
         <GalleryEnvironment />
         <GalleryControls 
           setCurrentIndex={setCurrentIndex} 
           currentIndex={currentIndex} 
-          maxIndex={filteredEvents.length - 1} 
+          maxIndex={filteredEvents.length - 1}
+          zoom={zoom}
+          setZoom={setZoom}
         />
         
         {/* Frames */}
-        {filteredEvents.map((event, index) => (
-          <FramedEvent
-            key={event.id}
-            position={framePositions[index]}
-            event={event}
-            isFocused={index === Math.round(currentIndex)}
-            isVisible={Math.abs(index - currentIndex) < 5} // Only show nearby frames
-            distanceFromCenter={index - currentIndex}
-            onSelect={() => handleSelectFrame(event.id)}
-          />
-        ))}
+        {filteredEvents.map((event, index) => {
+          const isFocused = index === Math.round(currentIndex);
+          console.log(`Frame ${index} (${event.title}): isFocused=${isFocused}, currentIndex=${currentIndex}, rounded=${Math.round(currentIndex)}`);
+          return (
+            <FramedEvent
+              key={event.id}
+              position={framePositions[index]}
+              event={event}
+              isFocused={isFocused}
+              isVisible={true} // Always show all frames
+              distanceFromCenter={index - currentIndex}
+              onSelect={() => handleSelectFrame(event.id)}
+            />
+          );
+        })}
         
         {/* Timeline label */}
         <Text
@@ -251,15 +229,29 @@ const TimelineGallery = ({ activeCategories = [] }) => {
       <div className="timeline-ui">
         <div className="timeline-controls">
           <h3>Gallery Navigation</h3>
-          <p>• Scroll wheel to move through time</p>
+          <p>• Scroll wheel to zoom in/out</p>
           <p>• Click and drag to navigate gallery</p>
           <p>• Click on a frame to focus</p>
-          <button 
-            onClick={() => setDepthOfFieldEnabled(!depthOfFieldEnabled)}
-            className="effect-toggle"
-          >
-            {depthOfFieldEnabled ? "Disable" : "Enable"} Depth of Field
-          </button>
+          
+          <div className="zoom-controls">
+            <label htmlFor="zoom-slider">Zoom Level: {zoom.toFixed(1)}x</label>
+            <input
+              id="zoom-slider"
+              type="range"
+              min="0.1"
+              max="10"
+              step="0.1"
+              value={zoom}
+              onChange={(e) => setZoom(parseFloat(e.target.value))}
+              className="zoom-slider"
+            />
+            <div className="zoom-buttons">
+              <button onClick={() => setZoom(0.5)} className="zoom-btn">50%</button>
+              <button onClick={() => setZoom(1)} className="zoom-btn">100%</button>
+              <button onClick={() => setZoom(2)} className="zoom-btn">200%</button>
+              <button onClick={() => setZoom(5)} className="zoom-btn">500%</button>
+            </div>
+          </div>
         </div>
         
         {selectedEvent && (
@@ -283,4 +275,4 @@ const TimelineGallery = ({ activeCategories = [] }) => {
   );
 };
 
-export default TimelineGallery; 
+export default TimelineGallery;
