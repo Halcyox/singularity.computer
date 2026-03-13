@@ -11,6 +11,8 @@ function debugLog(_section: string, _message: string, _data?: unknown): void {
 export interface UseTechGraphOptions {
   onNodeSelect?: (node: TechNode | null) => void;
   onNodeHover?: (node: TechNode | null) => void;
+  /** When set, domain filter is re-applied after techTree updates (e.g. timeline change). */
+  activeDomains?: DomainId[];
 }
 
 export interface NodeScreenPosition {
@@ -20,7 +22,7 @@ export interface NodeScreenPosition {
 }
 
 export interface UseTechGraphReturn {
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   graphState: GraphState;
   selectedNode: TechNode | null;
   hoveredNode: TechNode | null;
@@ -156,10 +158,11 @@ export function useTechGraph(
     };
   }, []);
 
-  // When techTree changes (e.g. timeline year), update graph data without remounting
+  // When techTree changes (e.g. timeline year), update graph with smooth position animation
   useEffect(() => {
     if (graphRef.current) {
-      graphRef.current.setTechTree(techTree);
+      graphRef.current.setTechTree(techTree, { animate: true, durationMs: 400 });
+      graphRef.current.filterByDomains(optionsRef.current.activeDomains ?? []);
     }
   }, [techTree]);
 

@@ -26,6 +26,15 @@ html, body {
   overflow: hidden;
 }
 
+/* Timeline slider (graph view): below header, left side */
+.app-timeline {
+  position: absolute;
+  top: 72px;
+  left: 24px;
+  z-index: 100;
+  max-width: min(320px, 90vw);
+}
+
 /* Footer */
 .app-footer {
   position: absolute;

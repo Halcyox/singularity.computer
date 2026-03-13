@@ -4,7 +4,6 @@
  */
 
 import type { TechTree, TechNode, TRL, NodeStatus } from '../types';
-import { getNodeTRL } from './trl';
 
 const PRESENT_YEAR = 2026;
 

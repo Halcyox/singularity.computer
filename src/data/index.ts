@@ -1,5 +1,5 @@
 import { TechTree, TechNode, TechLink, DomainId } from '../types';
-import { DOMAINS, DOMAIN_LIST } from './domains';
+import { DOMAIN_LIST } from './domains';
 
 // Import all domain nodes
 import AI_NODES from './domains/ai';

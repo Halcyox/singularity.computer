@@ -1,21 +1,31 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   TechTreeGraph,
   EmbeddingView,
   NodeDetail,
   DomainFilter,
   Header,
+  TimelineSlider,
 } from './components';
 import type { ViewMode } from './components/TechTree/Header';
 import { TECH_TREE, NODE_MAP } from './data';
 import { useTechGraph } from './hooks';
+import { getTechTreeAtYear, getTimelineBounds, PRESENT_YEAR } from './utils/timeline';
 import type { DomainId, TechNode } from './types';
 import './App.css';
+
+const timelineBounds = getTimelineBounds(TECH_TREE.nodes);
 
 const App: React.FC = () => {
   const [activeDomains, setActiveDomains] = useState<DomainId[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('graph');
   const [embeddingSelectedNode, setEmbeddingSelectedNode] = useState<TechNode | null>(null);
+  const [timelineYear, setTimelineYear] = useState(PRESENT_YEAR);
+
+  const techTreeAtYear = useMemo(
+    () => getTechTreeAtYear(TECH_TREE, timelineYear),
+    [timelineYear]
+  );
 
   const {
     containerRef,
@@ -27,7 +37,7 @@ const App: React.FC = () => {
     filterByDomains,
     clearSelection: clearGraphSelection,
     selectNodeById: graphSelectNodeById,
-  } = useTechGraph(TECH_TREE);
+  } = useTechGraph(techTreeAtYear, { activeDomains });
 
   const selectedNode =
     viewMode === 'graph' ? graphSelectedNode : embeddingSelectedNode;
@@ -85,16 +95,28 @@ const App: React.FC = () => {
       />
 
       {viewMode === 'graph' && (
-        <DomainFilter
-          activeDomains={activeDomains}
-          onToggle={handleToggleDomain}
-          onClear={handleClearDomains}
-        />
+        <>
+          <div className="app-timeline">
+            <TimelineSlider
+              minYear={timelineBounds.minYear}
+              maxYear={timelineBounds.maxYear}
+              value={timelineYear}
+              onChange={setTimelineYear}
+              label="Year"
+              aria-label="Timeline year: show technologies by TRL at this date"
+            />
+          </div>
+          <DomainFilter
+            activeDomains={activeDomains}
+            onToggle={handleToggleDomain}
+            onClear={handleClearDomains}
+          />
+        </>
       )}
 
       {selectedNode && (
         <NodeDetail
-          node={selectedNode}
+          node={NODE_MAP.get(selectedNode.id) ?? selectedNode}
           onClose={clearSelection}
           onSelectNodeId={handleSelectNodeId}
         />

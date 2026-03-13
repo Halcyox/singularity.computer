@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import createScatterplot from 'regl-scatterplot';
 import { TechNode } from '../../types';
 import { DOMAIN_LIST } from '../../data/domains';

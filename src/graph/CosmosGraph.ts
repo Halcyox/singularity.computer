@@ -1,12 +1,10 @@
 import { Graph, GraphConfigInterface } from '@cosmos.gl/graph';
 import { TechTree, TechNode, DomainId } from '../types';
 import { DOMAINS } from '../data/domains';
-import { NODE_INDEX_MAP } from '../data';
 import { getNodeTRL } from '../utils/trl';
 import {
   LAYOUT_SPREAD_BASE,
   LAYOUT_SPREAD_PER_TIER,
-  GOLDEN_ANGLE_DEG,
   LAYOUT_TIER_RING_SCALE,
   LAYOUT_MODE,
   LAYOUT_TRL_SCALE,
@@ -42,6 +40,7 @@ export interface GraphState {
 // ============================================================================
 
 const SNAP_BACK_DURATION_MS = 350;
+const TIMELINE_ANIMATION_DURATION_MS = 400;
 const SNAP_BACK_EASING = (t: number) => 1 - Math.pow(1 - t, 2); // ease-out quad
 
 export class CosmosGraph {
@@ -52,6 +51,7 @@ export class CosmosGraph {
   private state: GraphState;
   private nodeIndexToId: Map<number, string>;
   private snapBackRafId: number = 0;
+  private timelineRafId: number = 0;
 
   constructor(techTree: TechTree, callbacks: GraphCallbacks = {}) {
     this.techTree = techTree;
@@ -192,50 +192,21 @@ export class CosmosGraph {
     this.graph.setLinkColors(linkColors);
 
     this.graph.render();
+  }
 
-    // Read back what the library actually has (right after render)
-    const readback = this.graph.getPointPositions();
-    const sampleReadback = readback.length >= 6
-      ? [
-          { i: 0, x: readback[0], y: readback[1] },
-          { i: 1, x: readback[2], y: readback[3] },
-          { i: 2, x: readback[4], y: readback[5] },
-        ]
-      : [];
-    const same = sampleOur.every((s, i) => {
-      const r = sampleReadback[i];
-      return r && Math.abs(s.x - r.x) < 1e-5 && Math.abs(s.y - r.y) < 1e-5;
-    });
-    debugLog('setGraphData', 'After render(): getPointPositions() readback (sample)', {
-      sample: sampleReadback,
-      sameAsOurs: same,
-      readbackLength: readback.length,
-    });
-
-    // Delayed checks: do positions change over time?
-    const scheduleReadback = (label: string, delayMs: number) => {
-      setTimeout(() => {
-        if (!this.graph) return;
-        const later = this.graph.getPointPositions();
-        if (later.length >= 6) {
-          const sample = [
-            { i: 0, x: later[0], y: later[1] },
-            { i: 1, x: later[2], y: later[3] },
-            { i: 2, x: later[4], y: later[5] },
-          ];
-          const stillSame = sampleOur.every((s, i) => {
-            const r = sample[i];
-            return r && Math.abs(s.x - r.x) < 1e-5 && Math.abs(s.y - r.y) < 1e-5;
-          });
-          debugLog('setGraphData', `${label} (${delayMs}ms later) getPointPositions()`, {
-            sample,
-            stillSameAsInitial: stillSame,
-          });
-        }
-      }, delayMs);
-    };
-    scheduleReadback('Delayed readback 1', 1000);
-    scheduleReadback('Delayed readback 2', 3000);
+  /** Update only colors, sizes, and links (no positions). Used during timeline position animation. */
+  private setGraphDataColorsSizesLinksOnly(): void {
+    if (!this.graph) return;
+    const { nodes, links } = this.techTree;
+    const colors = this.generateColors(nodes);
+    this.graph.setPointColors(colors);
+    const sizes = this.generateSizes(nodes);
+    this.graph.setPointSizes(sizes);
+    const linkData = this.generateLinks(links);
+    this.graph.setLinks(linkData);
+    const linkColors = this.generateLinkColors(links);
+    this.graph.setLinkColors(linkColors);
+    this.graph.render();
   }
 
   private generatePositions(nodes: TechNode[]): Float32Array {
@@ -345,10 +316,11 @@ export class CosmosGraph {
 
   private generateLinks(links: typeof this.techTree.links): Float32Array {
     const linkData: number[] = [];
+    const nodeIdToIndex = new Map(this.techTree.nodes.map((n, i) => [n.id, i]));
 
     links.forEach(link => {
-      const sourceIndex = NODE_INDEX_MAP.get(link.source);
-      const targetIndex = NODE_INDEX_MAP.get(link.target);
+      const sourceIndex = nodeIdToIndex.get(link.source);
+      const targetIndex = nodeIdToIndex.get(link.target);
 
       if (sourceIndex !== undefined && targetIndex !== undefined) {
         linkData.push(sourceIndex, targetIndex);
@@ -404,7 +376,7 @@ export class CosmosGraph {
     this.callbacks.onNodeClick?.(node, index);
   }
 
-  private handleNodeHover(index: number, _position: [number, number], _event: any): void {
+  private handleNodeHover(index: number, _position: [number, number], _event: MouseEvent): void {
     const nodeId = this.nodeIndexToId.get(index);
     if (!nodeId) return;
 
@@ -416,7 +388,7 @@ export class CosmosGraph {
     this.callbacks.onNodeHover?.(node, index);
   }
 
-  private handleNodeHoverOut(_event: any): void {
+  private handleNodeHoverOut(_event: MouseEvent): void {
     debugLog('events', 'handleNodeHoverOut');
     this.state.hoveredNodeIndex = null;
     this.callbacks.onNodeHover?.(null, null);
@@ -465,6 +437,7 @@ export class CosmosGraph {
     };
 
     if (this.snapBackRafId) cancelAnimationFrame(this.snapBackRafId);
+    if (this.timelineRafId) cancelAnimationFrame(this.timelineRafId);
     this.snapBackRafId = requestAnimationFrame(tick);
   }
 
@@ -494,8 +467,8 @@ export class CosmosGraph {
   zoomToNode(nodeId: string, duration = 700): void {
     if (!this.graph) return;
 
-    const index = NODE_INDEX_MAP.get(nodeId);
-    if (index !== undefined) {
+    const index = this.techTree.nodes.findIndex(n => n.id === nodeId);
+    if (index !== -1) {
       this.graph.zoomToPointByIndex(index, duration, 4);
       this.graph.selectPointByIndex(index, true);
       this.graph.setConfig({ focusedPointIndex: index });
@@ -571,12 +544,57 @@ export class CosmosGraph {
 
   /**
    * Update the tech tree (e.g. when timeline year changes) without remounting.
-   * Reapplies positions, colors, sizes, and links from the new tree.
+   * When animate is true, node positions interpolate smoothly to the new layout.
    */
-  setTechTree(techTree: TechTree): void {
-    this.techTree = techTree;
-    this.setGraphData();
-    this.graph?.render();
+  setTechTree(techTree: TechTree, options?: { animate?: boolean; durationMs?: number }): void {
+    if (!this.graph) return;
+
+    const durationMs = options?.durationMs ?? TIMELINE_ANIMATION_DURATION_MS;
+    const animate = options?.animate === true;
+
+    if (animate) {
+      if (this.timelineRafId) cancelAnimationFrame(this.timelineRafId);
+      if (this.snapBackRafId) cancelAnimationFrame(this.snapBackRafId);
+
+      const current = this.graph.getPointPositions();
+      this.techTree = techTree;
+      const target = this.generatePositions(techTree.nodes);
+      const targetArr = Array.from(target);
+      if (current.length !== targetArr.length) {
+        this.setGraphData();
+        return;
+      }
+
+      this.setGraphDataColorsSizesLinksOnly();
+
+      const startTime = performance.now();
+      const startPositions = Array.from(current);
+
+      const tick = (): void => {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(1, elapsed / durationMs);
+        const eased = SNAP_BACK_EASING(t);
+
+        const positions = new Float32Array(startPositions.length);
+        for (let i = 0; i < startPositions.length; i++) {
+          positions[i] = startPositions[i] + (targetArr[i] - startPositions[i]) * eased;
+        }
+
+        this.graph?.setPointPositions(positions, true);
+        this.graph?.render();
+
+        if (t < 1) {
+          this.timelineRafId = requestAnimationFrame(tick);
+        } else {
+          this.timelineRafId = 0;
+        }
+      };
+
+      this.timelineRafId = requestAnimationFrame(tick);
+    } else {
+      this.techTree = techTree;
+      this.setGraphData();
+    }
   }
 
   // ==========================================================================
@@ -588,6 +606,10 @@ export class CosmosGraph {
     if (this.snapBackRafId) {
       cancelAnimationFrame(this.snapBackRafId);
       this.snapBackRafId = 0;
+    }
+    if (this.timelineRafId) {
+      cancelAnimationFrame(this.timelineRafId);
+      this.timelineRafId = 0;
     }
     if (this.graph) {
       this.graph.destroy();
