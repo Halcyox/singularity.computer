@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@cosmos.gl/graph": "^2.6.2",
     "@react-spring/three": "^10.0.1",
     "@react-three/cannon": "^6.5.2",
     "@react-three/drei": "^9.80.1",
@@ -13,7 +14,9 @@
     "cannon": "^0.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "regl-scatterplot": "^1.15.0",
     "three": "^0.160.0",
+    "umap-js": "^1.4.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -42,9 +45,12 @@
   },
   "devDependencies": {
     "@testing-library/react": "^16.2.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.2.1",
     "jsdom": "^26.0.0",
     "terser": "^5.43.1",
+    "typescript": "^5.9.3",
     "vite": "^5.1.4",
     "vitest": "^3.0.8"
   }

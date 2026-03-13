@@ -9,7 +9,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-    extensions: ['.js', '.jsx', '.json'] 
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json']
   },
   // Handle environment variables
   define: {
@@ -26,18 +26,5 @@ export default defineConfig({
     port: 3000,
     open: true,
     cors: true,
-  },
-  // Configure esbuild to handle JSX in .js files
-  esbuild: {
-    loader: 'jsx',
-    include: /src\/.*\.jsx?$/,
-    exclude: [],
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      loader: {
-        '.js': 'jsx',
-      },
-    },
   },
 }); 

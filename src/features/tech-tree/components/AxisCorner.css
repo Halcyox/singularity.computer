@@ -1,0 +1,143 @@
+/* Wrapper when rendered in place (no portal) */
+.axis-corner-wrapper {
+  position: absolute;
+  left: 0;
+  bottom: 72px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.axis-corner-wrapper .axis-corner-root {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+}
+
+.axis-corner-scale {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  transform-origin: 0 100%;
+  pointer-events: none;
+}
+
+/* Panel: compact, readable, no overlapping text */
+.axis-corner-root {
+  position: fixed;
+  left: 0;
+  bottom: 5.5vmin;
+  padding: 10px 12px 14px 14px;
+  min-width: 140px;
+  z-index: 2147483647;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 0 10px 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.axis-corner-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 10px;
+  line-height: 1;
+}
+
+/* One row: L-spine + Tier (vertical) + TRL (horizontal) side by side */
+.axis-corner-layout {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0;
+  min-height: 44px;
+}
+
+.axis-corner-spine {
+  flex-shrink: 0;
+  width: 32px;
+  height: 28px;
+  margin-right: 6px;
+  border-left: 2px solid rgba(255, 255, 255, 0.6);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+/* Tier: vertical column of numbers */
+.axis-corner-y {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 28px;
+  margin-right: 14px;
+  flex-shrink: 0;
+}
+
+.axis-corner-y .axis-corner-caption {
+  position: absolute;
+  top: -18px;
+  right: 0;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.axis-corner-ticks-y {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  line-height: 1;
+}
+
+.axis-corner-ticks-y .axis-corner-tick {
+  display: block;
+}
+
+/* TRL: horizontal row of numbers */
+.axis-corner-x {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.axis-corner-x .axis-corner-caption {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.axis-corner-ticks-x {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  flex: 1;
+  gap: 2px;
+}
+
+.axis-corner-ticks-x .axis-corner-tick {
+  flex-shrink: 0;
+  min-width: 12px;
+  text-align: center;
+}
+
+.axis-corner-tick {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1;
+}

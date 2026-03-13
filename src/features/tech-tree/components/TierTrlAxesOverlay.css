@@ -1,0 +1,28 @@
+.tier-trl-axes-overlay {
+  z-index: 2;
+}
+
+.tier-trl-axis-label {
+  fill: rgba(255, 255, 255, 0.75);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.tier-trl-axis-label-y {
+  font-size: 10px;
+}
+
+.tier-trl-axis-label-x {
+  font-size: 10px;
+}
+
+.tier-trl-axis-title {
+  fill: rgba(255, 255, 255, 0.5);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-family: system-ui, -apple-system, sans-serif;
+}

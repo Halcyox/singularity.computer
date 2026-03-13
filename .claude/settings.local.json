@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm dev)",
+      "Bash(pnpm install:*)",
+      "WebSearch",
+      "WebFetch(domain:cosmograph.app)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:cosmosgl.github.io)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm remove:*)",
+      "WebFetch(domain:cosmos.gl)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(mkdir:*)",
+      "Bash(echo:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(curl:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
