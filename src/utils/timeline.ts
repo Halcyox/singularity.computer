@@ -24,10 +24,12 @@ const TRL_DELTA: Record<'minor' | 'major' | 'breakthrough', number> = {
 /**
  * Returns the effective TRL for a node at a given date from milestones.
  * - If node is achieved by that year, use node's TRL.
- * - Otherwise start at 1 and add deltas from milestones on or before the date; cap at node's TRL.
+ * - Otherwise start at 1 and add deltas from milestones on or before the date.
+ * - Node's explicit trl (if set) is used as both floor and cap: we never show below it, and never above it until achieved.
  */
 function trlAtDateFromMilestones(node: TechNode, dateStr: string): TRL {
-  const cap = (node.trl ?? 9) as number;
+  const explicitTrl = node.trl != null ? (node.trl as number) : null;
+  const cap = explicitTrl ?? 9;
   const year = parseInt(dateStr.slice(0, 4), 10);
 
   if (node.yearAchieved != null && node.yearAchieved <= year) {
@@ -43,7 +45,13 @@ function trlAtDateFromMilestones(node: TechNode, dateStr: string): TRL {
   for (const m of onOrBefore) {
     value += TRL_DELTA[m.significance];
   }
-  value = Math.min(cap, Math.max(1, Math.round(value)));
+  value = Math.max(1, Math.round(value));
+  // Explicit trl acts as floor (never show below) and cap (don't show above until achieved)
+  if (explicitTrl != null) {
+    value = Math.max(explicitTrl, Math.min(cap, value));
+  } else {
+    value = Math.min(cap, value);
+  }
   return value as TRL;
 }
 
